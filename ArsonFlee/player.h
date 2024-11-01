@@ -24,7 +24,8 @@ struct Player {
 };
 
 bool checkForDamage(Player &player) {
-    return player.position.X == firePosition.X && player.position.Y == firePosition.Y;
+    return room[player.position.X][player.position.Y] == 'F';
+    //return player.position.X == firePosition.X && player.position.Y == firePosition.Y;
 }
 
 

@@ -9,9 +9,10 @@
 #include "gameSemaphore.h"
 #include "room.h"
 #include "player.h"
-// extern GameSemaphore game_semaphore;
 
+extern GameSemaphore game_semaphore;
 
+// Inicializa a matriz no console
 void startRoom() {
     for (int i = 0; i < SIZE_X; ++i) {
         for (int j = 0; j < SIZE_Y; ++j) {
@@ -23,11 +24,10 @@ void startRoom() {
     room[xPosition][SIZE_Y - 1] = 'X'; // A última coluna
 }
 
-
-
-void updateRoom() {
-    while (true) {
-        // game_semaphore.wait_semaphore(); // Espera para entrar na seção crítica
+// Atualiza a matriz a cada movimento de jogador e fogo
+void updateRoom(bool &gameRunning) {
+    while (gameRunning) {
+        game_semaphore.wait_semaphore(); // Espera para entrar na seção crítica
         system("clear");
         std::cout << "Matriz do Jogo:\n";
         for (int i = 0; i < SIZE_X; ++i) {
@@ -37,10 +37,9 @@ void updateRoom() {
             std::cout << std::endl; // nova linha após cada linha da matriz
         }
         std::cout << "Vidas: " << lifePoints << std::endl;
-        // game_semaphore.release_semaphore(); // Libera a seção crítica
+        game_semaphore.release_semaphore(); // Libera a seção crítica
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
-
 
 #endif
