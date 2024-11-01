@@ -6,9 +6,6 @@
 #include <semaphore.h>
 #include <chrono>
 #include <vector>
-#include "gameSemaphore.h"
-
-extern GameSemaphore game_semaphore;
 
 const int SIZE_X = 5;
 const int SIZE_Y = 10;
@@ -30,12 +27,9 @@ void setFire(char (&room)[SIZE_X][SIZE_Y]){
 void burnGround(int time, bool &gameRunning) {
     while (gameRunning) {
         std::this_thread::sleep_for(std::chrono::seconds(time));
-        game_semaphore.wait_semaphore(); // Espera para entrar na seção crítica
         {
             setFire(room);
         }
-        
-        game_semaphore.release_semaphore(); // Libera a seção crítica
     }
 }
 #endif

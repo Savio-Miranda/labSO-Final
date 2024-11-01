@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
 
 #include "gameSemaphore.h"
 #include "room.h"
@@ -11,8 +12,8 @@ using namespace std;
 
 extern GameSemaphore game_semaphore;
 
-
 int lifePoints = 3;
+std::string endGameMessage;
 
 struct PlayerPosition {
     int X;
@@ -23,14 +24,15 @@ struct Player {
     PlayerPosition position;
 };
 
-bool checkForDamage(Player &player) {
+bool checkForDamage(Player &player){
     return room[player.position.X][player.position.Y] == 'F';
-    //return player.position.X == firePosition.X && player.position.Y == firePosition.Y;
 }
 
+bool checkForFinish(Player &player){
+    return room[player.position.X][player.position.Y] == 'X';
+}
 
 void playerWalks(Player &player, char whichWay, bool &gameRunning) {
-    game_semaphore.wait_semaphore(); // Espera para entrar na seção crítica.
     PlayerPosition newPosition = player.position; // Posição temporária
 
     switch (whichWay) {
@@ -48,7 +50,6 @@ void playerWalks(Player &player, char whichWay, bool &gameRunning) {
             break;
         default:
             std::cout << "Direção inválida!" << std::endl;
-            game_semaphore.release_semaphore(); // Libera antes de retornar
             return;
     }
 
@@ -58,32 +59,36 @@ void playerWalks(Player &player, char whichWay, bool &gameRunning) {
     if (checkForDamage(tempPlayer)) {
         lifePoints -= 1;
         std::cout << "Você tomou dano! Vidas restantes: " << lifePoints << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    
+    } else if (checkForFinish(tempPlayer)) {
+        std::cout << "Você chegou ao 'X'! Fim do jogo." << std::endl;
+        endGameMessage = "Você chegou na saída! Parabéns!\n";
+        gameRunning = false; // Define que o jogo não está mais rodando
     } else {
         // Atualiza a matriz se não tomou dano
         room[player.position.X][player.position.Y] = '.';
         player.position = newPosition; // Atualiza a posição do jogador
         room[player.position.X][player.position.Y] = 'O'; // Marca a nova posição
     }
-
-    // Verifica se o jogador alcançou o 'X'
-    if (room[player.position.X][player.position.Y] == 'X') {
-        std::cout << "Você chegou ao 'X'! Fim do jogo." << std::endl;
-        gameRunning = false; // Define que o jogo não está mais rodando
-    }
-
-    game_semaphore.release_semaphore(); // Libera a seção crítica
+    
 }
 
 void playerLives(Player &player, bool &gameRunning) {
     while (gameRunning) {
         char direction;
         std::cin >> direction;
-        playerWalks(player, direction, gameRunning);
+        game_semaphore.wait_semaphore(); // Espera para entrar na seção crítica.
+        {
+            playerWalks(player, direction, gameRunning);
 
-        if (lifePoints <= 0) {
-            std::cout << "Você morreu! Fim do jogo." << std::endl;
-            gameRunning = false; // Define que o jogo não está mais rodando
+            if (lifePoints <= 0) {
+                endGameMessage = "Você morreu! Fim do jogo.\n";
+                gameRunning = false; // Define que o jogo não está mais rodando
+            }
         }
+        game_semaphore.release_semaphore(); // Libera a seção crítica
     }
 }
 
